@@ -60,16 +60,24 @@
       {"id": "extreme",  "label": "Extreme",           "sub": "+75% crude, +200% jet fuel",  "crudePctUp": 0.75, "jetPctUp": 2.00, "color": "#a32d2d"}
     ],
     "regions": {
-      "USA": "US", "Canada": "US", "Ireland": "EU", "UK": "EU", "France": "EU",
+      "USA": "NA", "Canada": "NA", "Ireland": "EU", "UK": "EU", "France": "EU",
       "Germany": "EU", "Switzerland": "EU", "Spain": "EU", "Finland": "EU",
       "Austria": "EU", "Greece": "EU", "Sweden": "EU", "Poland": "EU",
       "Turkey": "MENA", "Qatar": "MENA", "UAE": "MENA", "Saudi Arabia": "MENA",
-      "Oman": "MENA", "Bahrain": "MENA", "Kazakhstan": "MENA",
+      "Oman": "MENA", "Bahrain": "MENA", "Ethiopia": "MENA", "Kazakhstan": "MENA",
       "Japan": "Asia", "South Korea": "Asia", "Singapore": "Asia",
       "Hong Kong": "Asia", "China": "Asia", "Taiwan": "Asia", "India": "Asia",
       "Thailand": "Asia", "Vietnam": "Asia", "Indonesia": "Asia",
       "Australia": "Oceania", "New Zealand": "Oceania", "Fiji": "Oceania",
-      "Chile": "LATAM", "Ethiopia": "Africa"
+      "Chile": "LATAM"
+    },
+    "region_labels": {
+      "NA": "North America",
+      "EU": "Europe",
+      "MENA": "Middle East & Africa",
+      "Asia": "Asia-Pacific",
+      "Oceania": "Oceania",
+      "LATAM": "Latin America"
     },
     "flags": {
       "USA": "🇺🇸", "Canada": "🇨🇦", "Ireland": "🇮🇪", "UK": "🇬🇧",
