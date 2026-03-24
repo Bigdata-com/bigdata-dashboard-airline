@@ -1,0 +1,30 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Environment and local secrets (none required for this static site today)
+.env
+.env.*
+!.env.example
+
+# Dependencies and package managers (if you add a JS toolchain)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor / IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# Logs and caches
+*.log
+.cache/
