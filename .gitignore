@@ -28,3 +28,9 @@ ehthumbs.db
 # Logs and caches
 *.log
 .cache/
+
+# Output folder (local-only cache, regenerated per Cowork run)
+output/
+
+# Internal / working copies (not deployed)
+internal/
