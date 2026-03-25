@@ -17,6 +17,35 @@ resilience during the Iran conflict, powered by [Bigdata.com](https://bigdata.co
 
 See [HOW_IT_WORKS.md](HOW_IT_WORKS.md) for full architecture documentation.
 
+## Claude Cowork Instruction
+
+Full automation steps live in [`update-dashboard.md`](update-dashboard.md) and [`skills/`](skills/). Use this brief as the Cowork task preamble (or paste into the schedule instructions):
+
+```
+ROLE: Financial data pipeline generating a React dashboard showing
+50 global airlines' exposure to the Iran conflict.
+
+WORKING FOLDER: The bigdata-dashboard-airline repo root.
+CONFIG: config/tickers.json — contains all 50 airlines, scenarios, regions, flags.
+OUTPUT: dist/App.jsx and dist/index.html
+
+BIGDATA.COM MCP TOOLS AVAILABLE:
+- find_companies — resolve airline name to entity_id (use the "lookup" field from config)
+- bigdata_search — semantic search across filings, transcripts, news
+- bigdata_company_tearsheet — get financial data for public companies
+
+IMPORTANT FOR THIS AIRLINE LIST:
+- 50 airlines total: ~35 public, ~15 private
+- Use the "lookup" field (not ticker) for find_companies — works better for non-US stocks
+- For subsidiaries (Swiss, Austrian, British Airways, Iberia, Vueling, Scoot):
+  search BOTH the subsidiary name AND the parent group for filing data
+- Private carriers (Qatar, Emirates, Etihad, Saudia, etc.): search by name in
+  bigdata_search — data comes from news, press releases, industry reports
+- After generating, run: git add dist/ && git commit && git push origin main
+```
+
+In this repository the shipped artifact is a **single self-contained** [`dist/index.html`](dist/index.html) (React + Recharts + data inlined per `skills/frontend-design.md`); there is no separate `App.jsx` in the deploy path. Commit and push from an environment with Git credentials when you want GitHub Pages to update (Cowork may not have push access).
+
 ## Repository Structure
 
 ```
