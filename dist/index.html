@@ -573,10 +573,36 @@ function TabMetrics() {
   );
 }
 
+function TabAudit() {
+  return (
+    <div>
+      <MethodBox>
+        <strong>Evidence &amp; Audit</strong> provides the source documents backing key data points in this dashboard. Each card shows the source, date, company, and verbatim excerpt. Tags: CONFIRM (verified, green) or CAUTION (estimate or partially contradicted, orange).
+      </MethodBox>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:10}}>
+        {AUDIT_CHUNKS.map((c,i)=>(
+          <div key={i} style={{background:"#0f172a",border:"1px solid #1e293b",borderRadius:8,padding:"12px 14px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+              <div>
+                <div style={{fontWeight:600,color:"#e5e7eb",fontSize:12,marginBottom:2}}>{c.company}</div>
+                <div style={{fontSize:10,color:"#64748b"}}>{c.source} · {c.date}</div>
+              </div>
+              <span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:3,background:c.tag==="CONFIRM"?"#001a0e":"#1a0e00",color:c.tagColor,flexShrink:0,marginLeft:6}}>{c.tag}</span>
+            </div>
+            <div style={{fontSize:11,fontWeight:600,color:"#94a3b8",marginBottom:6}}>{c.headline}</div>
+            <div style={{fontSize:10,color:"#475569",fontStyle:"italic",lineHeight:1.5,borderLeft:"2px solid #1e293b",paddingLeft:8,marginBottom:6}}>"{c.quote}"</div>
+            <div style={{fontSize:10,color:"#60a5fa"}}>{c.riskFactor} — {c.motivation}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [tab,setTab] = useState(0);
-  const tabs = ["Resilience Ranking","Hedge Positions","Risk vs Spread","Margin Impact","Region View","Operating Metrics"];
-  const components = [TabResilience,TabHedge,TabScatter,TabMargin,TabRegion,TabMetrics];
+  const tabs = ["Resilience Ranking","Hedge Positions","Risk vs Spread","Margin Impact","Region View","Operating Metrics","Evidence & Audit"];
+  const components = [TabResilience,TabHedge,TabScatter,TabMargin,TabRegion,TabMetrics,TabAudit];
   const TabComponent = components[tab];
 
   const sc = SCENARIOS.find(s=>s.id==="current");
