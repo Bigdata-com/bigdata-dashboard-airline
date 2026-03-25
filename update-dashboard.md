@@ -14,7 +14,7 @@ Read these files in parallel BEFORE doing anything else:
 | File | Purpose |
 |------|---------|
 | `skills/frontend-design.md` | Visual spec: colors, fonts, CDN order, component contracts, column definitions |
-| `skills/data-pipeline.md` | Data schema, formulas, scenarios, region codes, validation checklist |
+| `skills/data-pipeline.md` | Data schema, **GROUNDED_DATA** contract, formulas, validation checklist |
 | `skills/bigdata-mcp-grounding.md` | MCP query templates, caching protocol, verified hedging facts |
 | `config/tickers.json` | Airline list, region mapping, scenario definitions |
 
@@ -214,21 +214,30 @@ python3 output/cache_helper.py stats
 
 ---
 
-## Step 5 — Extract & Normalize Metrics
+## Step 5 — GROUNDED_DATA first, then AIRLINES (no hallucination)
 
-From the FULL cache (all prior runs + any new data just fetched), extract
-metrics for all 50 airlines. The cache accumulates across runs — every chunk
-ever fetched is available for extraction, not just the current run's data.
-Follow the exact schema in `skills/data-pipeline.md`.
+From the FULL cache (`output/bigdata_cache.db` → `search_results`, plus tearsheets),
+build **`GROUNDED_DATA`** **before** you write any numbers into `AIRLINES`. Follow
+`skills/data-pipeline.md` → **GROUNDED_DATA (mandatory)** for the exact schema and
+confidence rules.
 
-**Key rules:**
-- Use verified hedging facts from `skills/bigdata-mcp-grounding.md` as baseline
-- Only override with NEW MCP data that is more recent
-- Use "NA" for region code (never "US")
-- FX rates: see `skills/data-pipeline.md`
-- Tag private/estimated data with `(est)` in hedgeNote
+**Hard rules:**
+1. **Never** invent hedge %, tenor, TRASM, CASM, or ASM — each published value needs a
+   `CONFIRM` or `CAUTION` evidence block with `chunk_id` (or tearsheet field reference in
+   `notes`) and a **verbatim** `verbatim_quote` from the retrieved text.
+2. The static tables in `skills/bigdata-mcp-grounding.md` are **SEED ONLY** — not a source
+   of truth for `AIRLINES`. Every number must be justified from **saved MCP chunks** for
+   that airline (subsidiary + parent searches where applicable).
+3. If a carrier-specific primary document is missing for hedge metrics, mark
+   `UNVERIFIED` and **do not** fabricate — either carry forward the previous run’s grounded
+   values (document in `notes`) or **do not** deploy updated figures for that airline; report
+   the gap in Step 8.
+4. After `GROUNDED_DATA` is complete, copy values into `AIRLINES` so each field matches
+   its evidence object’s `value`.
+5. Use "NA" for region code (never "US"). FX rates: `skills/data-pipeline.md`.
 
-Build the `AUDIT_CHUNKS` array: 15-25 structured entries from the best search results.
+**AUDIT_CHUNKS** (if used in the build): 15–25 entries, each tied to real chunks with
+verbatim quotes — same grounding standard as `GROUNDED_DATA`.
 
 ---
 
@@ -253,7 +262,7 @@ Write ONE file: `dist/index.html` — fully self-contained, no external .jsx fil
 - **Region View: column headers** — each region card must have AIRLINE / HEDGE / SPREAD column labels above the airline rows
 - **Scenario direction labels**: Moderate = `↓ Deescalation`, Severe = `↑ Escalation`, etc.
 - **6 market snapshot tiles** with sub-descriptions
-- **7 tabs**: Resilience, Hedge Positions, Risk vs Spread, Margin Impact, Region View, Operating Metrics, Evidence & Audit
+- **Tabs**: per `skills/frontend-design.md` (Evidence & Audit may be omitted if product policy hides it)
 - **Column definitions** in MethodBox for every table tab (with all metric descriptions and formulas for derived values)
 - **Status badges**: PRIVATE, SUB, UNHEDGED, PARTIAL, HEDGED, CAUTION
 - **Timestamp**: `Using Bigdata.com data as of: {GEN_TS}` (NOT "Generated" or "Live")
@@ -262,11 +271,15 @@ Write ONE file: `dist/index.html` — fully self-contained, no external .jsx fil
 ### Data arrays to generate:
 
 ```js
-const AIRLINES = [ /* 50 airlines with ALL fields from data-pipeline.md schema */ ];
+const GROUNDED_DATA = [ /* 50 objects — full provenance per data-pipeline.md */ ];
+const AIRLINES = [ /* 50 airlines; every numeric must match GROUNDED_DATA */ ];
 const SCENARIOS = [ /* 4 scenarios with dir/dirClass fields */ ];
-const AUDIT_CHUNKS = [ /* 15-25 evidence entries */ ];
+const AUDIT_CHUNKS = [ /* optional: 15-25 evidence entries, verbatim quotes */ ];
 const REGION_LABELS = { NA:"North America", EU:"Europe", MENA:"MENA", Asia:"Asia-Pacific", Oceania:"Oceania", LATAM:"Lat Am & Africa" };
 ```
+
+Add a short global disclaimer in the header or MethodBox: figures are derived from MCP-retrieved
+sources recorded in `GROUNDED_DATA` (auditable in page source).
 
 ### Methodology panels (one per tab):
 
@@ -291,7 +304,8 @@ grep -c "function App()" dist/index.html   # should be 1
 grep -c "prop-types" dist/index.html       # should be ≥1
 grep -c "export default" dist/index.html   # should be 0
 grep -c "src=\"./App.jsx\"" dist/index.html # should be 0
-grep -c "MethodBox" dist/index.html        # should be ≥7 (one per tab + column defs)
+grep -c "GROUNDED_DATA" dist/index.html    # should be ≥1
+grep -c "MethodBox" dist/index.html        # should match tab count per frontend-design.md
 grep -c '"NA"' dist/index.html             # should be ≥1 (region code)
 grep -c '"US"' dist/index.html             # should be 0 for region code
 ```
@@ -308,7 +322,8 @@ Report:
 - Search: total cached chunks, new chunks fetched this run, `published_after` filter used
 - Audit chunks collected (target: 15-25)
 - `dist/index.html` file size
-- All 7 tabs confirmed present
+- All required tabs confirmed present (per `skills/frontend-design.md`)
+- `GROUNDED_DATA` present; hedge fields CONFIRM/CAUTION or explicit stale carry-forward
 - Validation check results
 - Paths to updated artifacts (`dist/index.html`, `config/tickers.json` if changed)
 

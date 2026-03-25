@@ -5,13 +5,35 @@ data in verifiable sources. Read this at the start of every Cowork cycle.
 
 ---
 
-## Principles
+## Principles (zero fabrication)
 
-1. **Every value must trace to an MCP result** — never invent figures.
-2. **Every AUDIT_CHUNKS entry must cite a real source** with `date`, `source`, `company`.
-3. **If no fresh data found**, retain verified facts from the HEDGING_FACTS section below
-   and tag the audit chunk as `CAUTION` with note `"[STALE — carried from prior verified data]"`.
-4. **Never fabricate** a source name, URL, document ID, or date.
+1. **No hallucinated numbers** — If you cannot tie a figure to a retrieved MCP chunk
+   (or tearsheet field) with a **verbatim quote** or structured field reference, you
+   must **not** publish that figure as fact. Use the `GROUNDED_DATA` workflow in
+   `skills/data-pipeline.md` and gate publishing per `update-dashboard.md` Step 5.
+2. **Airline-level grounding** — Hedge %, tenor, horizon, and policy wording must come
+   from a document that **names that carrier** (issuer annual report, IR release,
+   SEC/20-F, earnings transcript) or clearly attributes the fact to that airline.
+   Generic industry articles are **CAUTION** at best; they cannot alone justify a
+   precise hedge percentage for a named carrier.
+3. **Subsidiaries** — Search and cache chunks under **both** subsidiary and parent
+   (e.g. Finnair + Finnair Group; BA + IAG). Prefer the **most recent issuer document**
+   over older snippets or third-party summaries.
+4. **Every AUDIT_CHUNKS entry** must cite a real source with `date`, `source`, `company`
+   and a **verbatim** `quote` from the chunk (not paraphrased numbers).
+5. **Never fabricate** URLs, document IDs, dates, or publisher names.
+6. **Static "HEDGING_FACTS" in this file are not authoritative** — They are **search
+   seeds and hypotheses only**. Published `AIRLINES` values must be justified from
+   **cached MCP results** (or tearsheet) and recorded in `GROUNDED_DATA`. Do not copy
+   percentages from the table below into the dashboard without a matching chunk quote.
+
+### Example (Finnair)
+
+If the latest financial statements / risk management disclosure state a **24-month**
+horizon and a **~82.5% target** hedge ratio for part of the program, the dashboard
+must reflect **those** figures only after they appear in a **saved** `bigdata_search`
+chunk (or tearsheet) with `chunk_id` and verbatim text — not legacy 60% / 6 mo estimates
+from memory or old briefs.
 
 ---
 
@@ -179,10 +201,14 @@ For European carriers, use "per available seat kilometre" in query 1.
 
 ---
 
-## Verified Hedging Facts (carry forward if no fresh data contradicts)
+## Hedging facts reference (SEED ONLY — not publishable without MCP proof)
 
-These are verified from SEC filings, annual reports, and news as of March 2026.
-Use these as baseline — only override if a NEW MCP result provides more recent data.
+**Do not paste these numbers into `AIRLINES` without validating against fresh MCP chunks
+per airline and logging evidence in `GROUNDED_DATA`.** Use this table only to craft
+`bigdata_search` queries and to know what to look for in filings.
+
+Historical reference as of internal review — **always supersede** with issuer documents
+retrieved via MCP when they differ (e.g. policy updates, new tenors).
 
 ### Zero Hedge (confirmed)
 | Airline | Reason | Source |
@@ -211,6 +237,7 @@ Use these as baseline — only override if a NEW MCP result provides more recent
 | Korean Air | 30% | ~$74/bbl Brent | 6 mo | Swaps | KRW/USD FX exposure |
 | Qantas | 52% | ~$77/bbl Brent | 9 mo | Swaps, options | AUD/USD FX exposure |
 | Air New Zealand | 50% | ~$76/bbl | 9 mo | Swaps | — |
+| Finnair | **Verify** | **Verify** | **Verify** (policy may cite 18–24 mo horizon, tiered ratios) | Per issuer | **Do not ship old 60% / 6 mo without a current chunk quote** |
 
 ---
 

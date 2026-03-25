@@ -24,7 +24,7 @@ config/tickers.json       ← airline list, regions, scenarios (READ ONLY)
   └─────┬───────┘
         ▼
   ┌─────────────┐
-  │ Step 6:     │── Extract metrics from cached + fresh results
+  │ Step 6:     │── GROUNDED_DATA → then AIRLINES (see GROUNDED_DATA section)
   │ Normalize   │
   └─────┬───────┘
         ▼
@@ -66,6 +66,78 @@ Each airline in the `AIRLINES` array must have ALL of these fields:
   parentGroup: String|null // Parent group name or null
 }
 ```
+
+---
+
+## GROUNDED_DATA (mandatory — anti-hallucination)
+
+Before you populate `AIRLINES`, build a **`GROUNDED_DATA`** structure: one record per
+airline, each **material** field tied to evidence. Nothing in `AIRLINES` may contradict
+`GROUNDED_DATA`; if evidence is missing, **do not invent** plausible numbers.
+
+### Confidence levels
+
+| Level | Meaning |
+|-------|---------|
+| `CONFIRM` | Issuer or regulatory primary document (10-K, 20-F, annual report, IR PDF, official earnings transcript) with **verbatim** quote in `verbatim_quote`. |
+| `CAUTION` | Credible secondary (Reuters, Bloomberg, etc.) with verbatim quote and date — use for display only if primary not available; prefer upgrading to CONFIRM next run. |
+| `UNVERIFIED` | No acceptable chunk this cycle — **do not** fill the corresponding `AIRLINES` field with a guess. Use prior run values **only** if the prior run’s `GROUNDED_DATA` for that field was CONFIRM/CAUTION and you explicitly carry forward with `"[STALE — same citation as prior run]"` in notes. Otherwise omit update or block publish (see runbook). |
+
+### Per-field evidence object (repeat for each populated metric)
+
+```js
+{
+  value: Number | String,       // Must match what you write into AIRLINES
+  confidence: "CONFIRM" | "CAUTION" | "UNVERIFIED",
+  chunk_id: String | null,      // From SQLite search_results or MCP chunk (required if CONFIRM/CAUTION)
+  source_name: String,          // e.g. "Finnair Financial Statements Release 2025"
+  document_date: String,        // ISO date of the document (from chunk or filing)
+  url: String | null,
+  verbatim_quote: String,       // Exact text supporting the value (not paraphrase)
+  notes: String                 // Optional: e.g. "tiered program — value is headline target band"
+}
+```
+
+### Required grounding (client-facing builds)
+
+For **each** airline, before generating `dist/index.html`:
+
+1. **`hedgePct` / `hedgeTenor` / `tenorLabel`** — Must have `CONFIRM` or `CAUTION`
+   evidence from a **carrier-specific** saved chunk (or tearsheet line cited by field
+   name). If only `UNVERIFIED`, do **not** ship new hedge numbers; keep last CONFIRM/CAUTION
+   pair from previous `GROUNDED_DATA` or stop and report in Step 8.
+2. **`trasm`, `fuelCasm`, `prasm`, `casm`, `casmEx`, `fuelGal`, `asm`, `loadFactor`**
+   — Each must have at least one evidence object per cycle **or** explicit carry-forward
+   from last run’s grounded citation (documented in `notes`).
+3. **`policy` (text)** — Must summarize only what the citations support; no speculative
+   sentences without a chunk.
+
+### Derived fields
+
+- **`adj` / adjusted spread** — Not separately grounded; provenance is the list of field
+  keys used in `calcAdjSpread` (`trasm`, `fuelCasm`, `hedgePct`, `hedgeTenor`, scenario).
+
+### Output embedding
+
+Generated `dist/index.html` MUST include, in the same `<script type="text/babel">` block
+as `AIRLINES`:
+
+```js
+const GROUNDED_DATA = [
+  {
+    name: "Finnair",
+    hedgePct: { value: 0.825, confidence: "CONFIRM", chunk_id: "…", source_name: "…", document_date: "2025-12-31", url: "…", verbatim_quote: "…", notes: "" },
+    hedgeTenor: { value: 24, confidence: "CONFIRM", … },
+    trasm: { … },
+    // … other fields as needed
+  },
+  // … all 50 airlines
+];
+```
+
+The UI does not need a dedicated tab if product policy hides it, but the **data must
+exist in the artifact** so humans can audit `GROUNDED_DATA` in source or DevTools.
+Optional: a collapsed MethodBox line: “All figures trace to `GROUNDED_DATA` in page source.”
 
 ---
 
@@ -203,12 +275,15 @@ const TOOLTIPS = {
 
 Before committing, verify:
 - [ ] `dist/index.html` is the ONLY output file (no App.jsx)
+- [ ] `const GROUNDED_DATA` exists with **50** entries, names match `AIRLINES`
+- [ ] Every `AIRLINES[i].hedgePct` / `hedgeTenor` / `tenorLabel` matches `GROUNDED_DATA[i]` and has `CONFIRM` or `CAUTION` (not `UNVERIFIED`) unless explicitly carried stale with note
+- [ ] No `verbatim_quote` is empty for any CONFIRM/CAUTION hedge field
 - [ ] All 50 airlines present in AIRLINES array
-- [ ] All 7 tabs render (Resilience, Hedge, Scatter, Bars, Region, Metrics, Audit)
+- [ ] All required tabs render per `skills/frontend-design.md` (currently 6 if Evidence is hidden)
 - [ ] Region codes are "NA" not "US"
 - [ ] Timestamp reads "Using Bigdata.com data as of: ..."
 - [ ] Moderate scenario labeled as deescalation with ↓ arrow
 - [ ] prop-types CDN loaded before Recharts
 - [ ] function App() — no "export default"
 - [ ] No <script src="./App.jsx"> — all JSX inlined
-- [ ] File size 70–140 KB
+- [ ] File size 70–140 KB (may grow slightly with GROUNDED_DATA)

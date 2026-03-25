@@ -15,7 +15,7 @@
 │  2. Check output/bigdata_cache.db → entities table       │
 │  3. Check output/bigdata_cache.db → search_results       │
 │  4. Call Bigdata.com MCP for fresh/missing data           │
-│  5. Extract & normalize metrics per skills/*.md          │
+│  5. Build GROUNDED_DATA, then AIRLINES per skills/*.md   │
 │  6. Generate dist/index.html (single self-contained file)│
 │  7. Git commit & push → GitHub Actions → GitHub Pages    │
 │                                                          │
@@ -65,17 +65,21 @@ The agent only fetches what's new:
 |------------|-----------------|
 | `frontend-design.md` | Visual spec: colors, fonts, CDN order, component contracts, layout |
 | `data-pipeline.md` | Data schema, formulas, scenarios, region codes, validation checklist |
-| `bigdata-mcp-grounding.md` | MCP query templates, caching protocol, verified hedging facts, audit schema |
+| `bigdata-mcp-grounding.md` | MCP query templates, caching protocol, **grounding rules (no fabrication)**, hedging seed table (non-authoritative), audit schema |
 
 These files are **read by the agent** at the start of each cycle. They are NOT
 regenerated — they define the contract that the generated `index.html` must follow.
 
 ### Output: `dist/index.html`
-- Single self-contained HTML file (~70-140 KB)
+- Single self-contained HTML file (~70–180 KB with `GROUNDED_DATA` provenance)
 - React 18 + Recharts loaded from CDN
 - All JSX inlined (no external .jsx files)
 - All data baked in (no runtime API calls)
 - Works on `file://` and via HTTPS (GitHub Pages)
+
+**Grounding:** `GROUNDED_DATA` in the same file lists per-airline evidence (`chunk_id`,
+verbatim quotes). See `skills/data-pipeline.md`. Static hedging tables in the MCP skill
+are seeds only — not a substitute for carrier-specific retrieved documents.
 
 ---
 

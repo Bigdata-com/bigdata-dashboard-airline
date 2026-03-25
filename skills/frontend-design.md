@@ -66,12 +66,13 @@ dist/index.html
 │   ├── <div id="root">
 │   ├── <script type="text/babel">  — ALL JSX inlined here
 │   │   ├── const GEN_TS = ...
-│   │   ├── const AIRLINES = [...]
+│   │   ├── const GROUNDED_DATA = [...]   ← provenance per skills/data-pipeline.md
+│   │   ├── const AIRLINES = [...]        ← values must match GROUNDED_DATA
 │   │   ├── const SCENARIOS = [...]
-│   │   ├── const AUDIT_CHUNKS = [...]
+│   │   ├── const AUDIT_CHUNKS = [...]    ← optional if Audit tab omitted
 │   │   ├── helper functions (calcAdjSpread, etc.)
 │   │   ├── sub-components (HedgeBar, SpreadChip, badges, MethodBox)
-│   │   ├── tab components (7 tabs)
+│   │   ├── tab components (6 or 7 tabs per product policy)
 │   │   └── function App() { ... }  ← NO "export default"
 │   └── <script type="text/babel">  — bootstrap
 │       └── ReactDOM.createRoot(...).render(React.createElement(App))
@@ -245,13 +246,23 @@ AIRLINE, RGN, TICKER, TRASM, PRASM, FUEL CASM, CASM-EX,
 CASM (*Derived* = Fuel CASM + CASM-ex), $/GAL, ASMS(B), LF %.
 Mark CASM as *Derived* with formula. Include FX conversion rates in MethodBox.
 
-### 7. Evidence & Audit
-Source documents backing each data point.
+### 7. Evidence & Audit (optional)
+Source documents backing each data point. Omit the tab if product policy hides it;
+**still emit `GROUNDED_DATA` in source** for auditability.
+
+---
+
+## GROUNDED_DATA & user-facing honesty
+
+- Emit **`const GROUNDED_DATA`** (see `skills/data-pipeline.md`) before `AIRLINES`.
+- In the page header subtitle (or first MethodBox), add one line: e.g. “Numeric fields
+  are tied to retrieved sources recorded in `GROUNDED_DATA` (view page source).”
+- Do not claim “verified” in UI unless the underlying `confidence` is `CONFIRM`.
 
 ---
 
 ## Size Budget
 
-- `dist/index.html`: 70–140 KB (all data + JSX inlined)
-- Aim for ≤ 900 lines of JSX
+- `dist/index.html`: ~70–180 KB (data + JSX + `GROUNDED_DATA` inlined)
+- Aim for ≤ 1100 lines of JSX when `GROUNDED_DATA` is full
 - No external files required
