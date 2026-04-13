@@ -135,9 +135,10 @@ const GROUNDED_DATA = [
 ];
 ```
 
-The UI does not need a dedicated tab if product policy hides it, but the **data must
-exist in the artifact** so humans can audit `GROUNDED_DATA` in source or DevTools.
-Optional: a collapsed MethodBox line: “All figures trace to `GROUNDED_DATA` in page source.”
+The **Evidence & Sources** tab (Tab 7, see `skills/frontend-design.md`) renders
+`GROUNDED_DATA` interactively with expandable citations, confidence badges, and
+source links. The `GROUNDED_DATA` array must also remain in the `<script>` block
+so it is accessible via DevTools for programmatic audit.
 
 ---
 

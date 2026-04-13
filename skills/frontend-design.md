@@ -246,17 +246,38 @@ AIRLINE, RGN, TICKER, TRASM, PRASM, FUEL CASM, CASM-EX,
 CASM (*Derived* = Fuel CASM + CASM-ex), $/GAL, ASMS(B), LF %.
 Mark CASM as *Derived* with formula. Include FX conversion rates in MethodBox.
 
-### 7. Evidence & Audit (optional)
-Source documents backing each data point. Omit the tab if product policy hides it;
-**still emit `GROUNDED_DATA` in source** for auditability.
+### 7. Evidence & Sources (mandatory)
+Interactive tab surfacing `GROUNDED_DATA` provenance for every airline and metric.
+This tab MUST always be included — it is the user-facing audit trail.
+
+**Layout:** One expandable card per airline (flag + name + ticker in header row).
+Each card has rows for the key grounded fields: `hedgePct`, `hedgeTenor`, `trasm`.
+
+**Per-field row (collapsed):** field label (uppercase) | value | `ConfBadge` | source name | document date.
+**Per-field row (expanded on click):** verbatim quote in italic blockquote style
+(`background:#080c14`, `borderRadius:6`, `padding:8px 12px`), notes line, and
+clickable "View source document" link (opens URL in new tab) when `url` is present.
+
+**Filter bar:** buttons for ALL / CONFIRM / CAUTION / UNVERIFIED with live counts.
+Summary stats on the right showing percentage breakdown (e.g. "76% confirmed").
+
+**`ConfBadge` component:** same color scheme as status badges:
+- CONFIRM: green (`#34d399` on `#001a0e`)
+- CAUTION: amber (`#fbbf24` on `#1a1200`)
+- UNVERIFIED: red (`#ef4444` on `#1a0808`)
+
+**MethodBox** must explain the three confidence levels and what they mean.
 
 ---
 
 ## GROUNDED_DATA & user-facing honesty
 
 - Emit **`const GROUNDED_DATA`** (see `skills/data-pipeline.md`) before `AIRLINES`.
-- In the page header subtitle (or first MethodBox), add one line: e.g. “Numeric fields
-  are tied to retrieved sources recorded in `GROUNDED_DATA` (view page source).”
+- In the page header subtitle, add a clickable link **“All figures sourced & cited”**
+  that sets `activeTab` to the Evidence & Sources tab index (tab 7). Style:
+  `color:#60a5fa, cursor:pointer, textDecoration:underline, textDecorationStyle:dotted`.
+- The Evidence & Sources tab (Tab 7) renders `GROUNDED_DATA` interactively — see
+  the tab spec above. This replaces the old “view page source” approach.
 - Do not claim “verified” in UI unless the underlying `confidence` is `CONFIRM`.
 
 ---

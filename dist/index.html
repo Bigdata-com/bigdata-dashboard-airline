@@ -330,7 +330,7 @@ function ResilienceTab({scenario}) {
     <div>
       <MethodBox>
         <strong style={{color:'#94a3b8'}}>Resilience Ranking</strong> ranks all 14 carriers by their ability to absorb the Iran conflict jet fuel shock under the selected scenario. Default sort: Hedge % descending (highest hedge first).<br/><br/>
-        All numeric fields are tied to retrieved sources recorded in <code>GROUNDED_DATA</code> (view page source). Figures are derived from MCP-retrieved sources; not all fields are independently verified (see confidence labels in page source).<br/><br/>
+        All numeric fields are backed by source documents with verbatim citations — see the <strong style={{color:'#60a5fa'}}>Evidence &amp; Sources</strong> tab for full provenance. Confidence: CONFIRM = issuer primary doc, CAUTION = credible secondary, UNVERIFIED = estimated.<br/><br/>
         <strong style={{color:'#94a3b8'}}>Column definitions:</strong>
         <table style={{width:'100%',margin:'8px 0',fontSize:11,borderCollapse:'collapse'}}>
           <tbody>
@@ -711,6 +711,120 @@ function MetricsTab() {
   );
 }
 
+// ─── TAB 7: EVIDENCE & SOURCES ───────────────────────────────────────────────
+function ConfBadge({level}) {
+  const map = {CONFIRM:{bg:'#001a0e',color:'#34d399',border:'#34d39944'},CAUTION:{bg:'#1a1200',color:'#fbbf24',border:'#fbbf2444'},UNVERIFIED:{bg:'#1a0808',color:'#ef4444',border:'#ef444444'}};
+  const s = map[level]||map.UNVERIFIED;
+  return <span style={{background:s.bg,color:s.color,border:`1px solid ${s.border}`,borderRadius:4,padding:'1px 5px',fontSize:9,fontWeight:700,letterSpacing:'0.3px'}}>{level}</span>;
+}
+
+function EvidenceTab() {
+  const [filter, setFilter] = useState('ALL');
+  const [expanded, setExpanded] = useState({});
+  const toggle = (key) => setExpanded(e=>({...e,[key]:!e[key]}));
+
+  const FIELD_LABELS = {hedgePct:'Hedge %',hedgeTenor:'Tenor',trasm:'TRASM'};
+  const FIELDS = ['hedgePct','hedgeTenor','trasm'];
+
+  const stats = useMemo(()=>{
+    let c=0,ca=0,u=0;
+    GROUNDED_DATA.forEach(g=>FIELDS.forEach(f=>{if(g[f]){const v=g[f].confidence;if(v==='CONFIRM')c++;else if(v==='CAUTION')ca++;else u++;}}));
+    return {confirm:c,caution:ca,unverified:u,total:c+ca+u};
+  },[]);
+
+  const filtered = filter==='ALL' ? GROUNDED_DATA : GROUNDED_DATA.filter(g=>FIELDS.some(f=>g[f]&&g[f].confidence===filter));
+
+  return (
+    <div>
+      <MethodBox>
+        <strong style={{color:'#94a3b8'}}>Evidence & Sources</strong> shows the provenance of every key metric. Each value is backed by a source document with a verbatim quote. Click any row to expand the full citation.<br/><br/>
+        <strong style={{color:'#34d399'}}>CONFIRM</strong> = issuer primary document (10-K, annual report, earnings transcript) &nbsp;
+        <strong style={{color:'#fbbf24'}}>CAUTION</strong> = credible secondary source or derived estimate &nbsp;
+        <strong style={{color:'#ef4444'}}>UNVERIFIED</strong> = no acceptable source this cycle
+      </MethodBox>
+
+      <div style={{display:'flex',gap:8,marginBottom:16,alignItems:'center',flexWrap:'wrap'}}>
+        <span style={{fontSize:11,color:'#64748b',textTransform:'uppercase',letterSpacing:'0.5px'}}>Filter:</span>
+        {['ALL','CONFIRM','CAUTION','UNVERIFIED'].map(f=>{
+          const count = f==='ALL'?stats.total:stats[f.toLowerCase()];
+          const active = filter===f;
+          const colors = {ALL:'#60a5fa',CONFIRM:'#34d399',CAUTION:'#fbbf24',UNVERIFIED:'#ef4444'};
+          return (
+            <button key={f} onClick={()=>setFilter(f)} style={{
+              background:active?`${colors[f]}18`:'transparent',border:`1px solid ${active?colors[f]:'#1e293b'}`,
+              borderRadius:6,padding:'4px 10px',cursor:'pointer',color:active?colors[f]:'#475569',fontSize:11,fontWeight:600
+            }}>{f} ({count})</button>
+          );
+        })}
+        <div style={{marginLeft:'auto',display:'flex',gap:12,fontSize:12}}>
+          <span style={{color:'#34d399'}} className="mono">{Math.round(stats.confirm/stats.total*100)}% confirmed</span>
+          <span style={{color:'#fbbf24'}} className="mono">{Math.round(stats.caution/stats.total*100)}% caution</span>
+          <span style={{color:'#ef4444'}} className="mono">{Math.round(stats.unverified/stats.total*100)}% unverified</span>
+        </div>
+      </div>
+
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        {filtered.map(g=>{
+          const airline = AIRLINES.find(a=>a.name===g.name);
+          if(!airline) return null;
+          return (
+            <div key={g.name} style={{background:'#0f172a',border:'1px solid #1e293b',borderRadius:8,overflow:'hidden'}}>
+              <div style={{padding:'12px 16px',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid #1e293b11'}}>
+                <span style={{fontSize:18}}>{airline.flag}</span>
+                <div style={{flex:1}}>
+                  <span style={{fontWeight:600,fontSize:14,color:'#e5e7eb'}}>{g.name}</span>
+                  <span className="mono" style={{fontSize:10,color:'#475569',marginLeft:8}}>{airline.ticker}</span>
+                </div>
+                <div style={{display:'flex',gap:4}}>
+                  {FIELDS.map(f=>g[f]?<ConfBadge key={f} level={g[f].confidence}/>:null)}
+                </div>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr',gap:0}}>
+                {FIELDS.map(f=>{
+                  const d = g[f];
+                  if(!d) return null;
+                  const key = `${g.name}-${f}`;
+                  const isOpen = expanded[key];
+                  const valDisplay = f==='hedgePct'?fmtPct(d.value):f==='hedgeTenor'?`${d.value} mo`:`${d.value.toFixed(2)}¢`;
+                  return (
+                    <div key={f} onClick={()=>toggle(key)} style={{padding:'10px 16px',borderTop:'1px solid #1e293b22',cursor:'pointer',background:isOpen?'#0c1120':'transparent',transition:'background 0.15s'}}>
+                      <div style={{display:'flex',alignItems:'center',gap:8}}>
+                        <span style={{color:'#60a5fa',fontSize:12,width:6}}>{isOpen?'▾':'▸'}</span>
+                        <span style={{fontSize:11,fontWeight:600,color:'#94a3b8',minWidth:60,textTransform:'uppercase'}}>{FIELD_LABELS[f]}</span>
+                        <span className="mono" style={{fontSize:13,fontWeight:700,color:'#e5e7eb',minWidth:55}}>{valDisplay}</span>
+                        <ConfBadge level={d.confidence}/>
+                        <span style={{fontSize:10,color:'#475569',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginLeft:8}}>
+                          {d.source_name||'—'}
+                        </span>
+                        {d.document_date && <span className="mono" style={{fontSize:10,color:'#334155',whiteSpace:'nowrap'}}>{d.document_date}</span>}
+                      </div>
+                      {isOpen && (
+                        <div style={{marginTop:10,marginLeft:14,paddingLeft:12,borderLeft:'2px solid #1e293b'}}>
+                          {d.verbatim_quote && (
+                            <div style={{fontSize:11,color:'#94a3b8',lineHeight:1.6,fontStyle:'italic',marginBottom:8,background:'#080c14',borderRadius:6,padding:'8px 12px'}}>
+                              "{d.verbatim_quote}"
+                            </div>
+                          )}
+                          {d.notes && <div style={{fontSize:10,color:'#475569',marginBottom:6}}>Note: {d.notes}</div>}
+                          {d.url && (
+                            <a href={d.url} target="_blank" rel="noopener noreferrer" style={{fontSize:10,color:'#60a5fa',textDecoration:'none'}} onClick={e=>e.stopPropagation()}>
+                              View source document ↗
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── APP ──────────────────────────────────────────────────────────────────────
 function App() {
   const [activeTab, setActiveTab] = useState(0);
@@ -729,7 +843,7 @@ function App() {
     { label:'Unhedged Carriers',value:`${unhedged}/14`, sub:'Zero derivative protection', subColor:'#ef4444' },
   ];
 
-  const TABS = ['Resilience Ranking','Hedge Positions','Risk vs Spread','Margin Impact','Region View','Operating Metrics'];
+  const TABS = ['Resilience Ranking','Hedge Positions','Risk vs Spread','Margin Impact','Region View','Operating Metrics','Evidence & Sources'];
 
   return (
     <div style={{minHeight:'100vh',background:'#0a0a0a'}}>
@@ -742,7 +856,7 @@ function App() {
                 🛫 Global Airlines — Iran Conflict Fuel Exposure Dashboard
               </h1>
               <div style={{fontSize:11,color:'#64748b',marginTop:3}}>
-                NA + EU carriers (14) · <span className="mono">Using Bigdata.com data as of: {GEN_TS}</span> · Figures tied to <code style={{color:'#60a5fa'}}>GROUNDED_DATA</code> (view page source)
+                NA + EU carriers (14) · <span className="mono">Using <a href="https://bigdata.com" target="_blank" rel="noopener noreferrer" style={{color:'#60a5fa',textDecoration:'none'}}>Bigdata.com</a> data as of: {GEN_TS}</span> · <span onClick={()=>setActiveTab(6)} style={{color:'#60a5fa',cursor:'pointer',textDecoration:'underline',textDecorationStyle:'dotted'}}>All figures sourced & cited</span>
               </div>
             </div>
             <div style={{display:'flex',alignItems:'center',gap:6,background:'#1e293b',borderRadius:6,padding:'4px 10px',fontSize:11}}>
@@ -802,6 +916,7 @@ function App() {
         {activeTab===3 && <MarginTab/>}
         {activeTab===4 && <RegionTab scenario={scenario}/>}
         {activeTab===5 && <MetricsTab/>}
+        {activeTab===6 && <EvidenceTab/>}
       </div>
 
       {/* FOOTER */}

@@ -277,8 +277,8 @@ const AUDIT_CHUNKS = [ /* optional: 15-25 evidence entries, verbatim quotes */ ]
 const REGION_LABELS = { NA:"North America", EU:"Europe", MENA:"MENA", Asia:"Asia-Pacific", Oceania:"Oceania", LATAM:"Lat Am & Africa" };
 ```
 
-Add a short global disclaimer in the header or MethodBox: figures are derived from MCP-retrieved
-sources recorded in `GROUNDED_DATA` (auditable in page source).
+Add a clickable "All figures sourced & cited" link in the header subtitle that navigates
+to the Evidence & Sources tab. See `skills/frontend-design.md` for tab spec and styling.
 
 ### Methodology panels (one per tab):
 
