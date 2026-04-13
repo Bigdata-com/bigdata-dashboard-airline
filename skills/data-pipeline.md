@@ -44,7 +44,7 @@ Each airline in the `AIRLINES` array must have ALL of these fields:
 ```js
 {
   name:        String,   // Display name (e.g. "Delta Air Lines")
-  ticker:      String,   // Stock ticker or "Private" or "—"
+  ticker:      String,   // Stock ticker (e.g. "DAL", "RYAAY")
   country:     String,   // Country name
   region:      String,   // One of: "NA", "EU", "MENA", "Asia", "Oceania", "LATAM"
   flag:        String,   // Emoji flag (e.g. "🇺🇸")
@@ -62,8 +62,8 @@ Each airline in the `AIRLINES` array must have ALL of these fields:
   instruments: String,   // Hedging instruments used
   policy:      String,   // 1-2 sentence hedging policy
   tenorLabel:  String,   // Human-readable: "12 mo", "None", etc.
-  isPrivate:   Boolean,  // true for private carriers
-  parentGroup: String|null // Parent group name or null
+  isPrivate:   Boolean,  // true if subsidiary without independent filings
+  parentGroup: String|null // Parent group name (e.g. "IAG Group") or null
 }
 ```
 
@@ -131,7 +131,7 @@ const GROUNDED_DATA = [
     trasm: { … },
     // … other fields as needed
   },
-  // … all 50 airlines
+  // … all airlines from config/tickers.json
 ];
 ```
 
@@ -241,8 +241,8 @@ const MARKET_TILES = [
   { label:"Jet Fuel NW EU",   value:"$1,730/mt",     sub:"All-time high; +100% vs pre-conflict" },
   { label:"Jet Crack Spread", value:"$38.50/bbl",    sub:"vs historical avg $8–12/bbl" },
   { label:"Hormuz Status",    value:"RESTRICTED",    sub:"Military conflict active" },
-  { label:"Carriers at Risk", value:"[N]/50",        sub:"Negative unit economics at current" },
-  { label:"Unhedged Carriers", value:"[N]/50",       sub:"Zero derivative protection" },
+  { label:"Carriers at Risk", value:"[N]/[TOTAL]",    sub:"Negative unit economics at current" },
+  { label:"Unhedged Carriers", value:"[N]/[TOTAL]",  sub:"Zero derivative protection" },
 ];
 ```
 
@@ -275,10 +275,10 @@ const TOOLTIPS = {
 
 Before committing, verify:
 - [ ] `dist/index.html` is the ONLY output file (no App.jsx)
-- [ ] `const GROUNDED_DATA` exists with **50** entries, names match `AIRLINES`
+- [ ] `const GROUNDED_DATA` exists with entries matching `config/tickers.json`, names match `AIRLINES`
 - [ ] Every `AIRLINES[i].hedgePct` / `hedgeTenor` / `tenorLabel` matches `GROUNDED_DATA[i]` and has `CONFIRM` or `CAUTION` (not `UNVERIFIED`) unless explicitly carried stale with note
 - [ ] No `verbatim_quote` is empty for any CONFIRM/CAUTION hedge field
-- [ ] All 50 airlines present in AIRLINES array
+- [ ] All airlines from `config/tickers.json` present in AIRLINES array
 - [ ] All required tabs render per `skills/frontend-design.md` (currently 6 if Evidence is hidden)
 - [ ] Region codes are "NA" not "US"
 - [ ] Timestamp reads "Using Bigdata.com data as of: ..."

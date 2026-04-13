@@ -57,7 +57,7 @@ python3 output/cache_helper.py entities
 ### Entity Resolution
 Check DB for cached entities. Only call `find_companies` for airlines NOT in cache:
 ```bash
-python3 output/cache_helper.py uncached "Qatar Airways" "Singapore Airlines" ...
+python3 output/cache_helper.py uncached "Delta Air Lines" "Ryanair Holdings" ...
 ```
 Save any new resolutions to the DB (see `skills/bigdata-mcp-grounding.md` for exact commands).
 
@@ -193,9 +193,8 @@ No `published_after` filter on first run.
 After each search: `save_search_chunks(RUN_ID, query, None, chunks)` — **airline must be `None`**.
 
 ### 4C. Tearsheets
-Call `bigdata_company_tearsheet(interval:"quarter")` for top 15 public carriers:
-DAL, UAL, AAL, LUV, Ryanair, IAG, Lufthansa, Air France-KLM,
-Singapore Airlines, Cathay Pacific, ANA, Turkish Airlines, Qantas, Korean Air, Air Canada.
+Call `bigdata_company_tearsheet(interval:"quarter")` for all public carriers in
+`config/tickers.json`. Use each airline's `lookup` field for entity resolution.
 
 ### 4D. Finish Run
 
@@ -203,7 +202,7 @@ Singapore Airlines, Cathay Pacific, ANA, Turkish Airlines, Qantas, Korean Air, A
 ```bash
 python3 -c "
 from output.cache_helper import finish_run
-finish_run('RUN_ID', airlines_count=50, chunks_count=TOTAL_CHUNKS)
+finish_run('RUN_ID', airlines_count=len(airlines), chunks_count=TOTAL_CHUNKS)
 "
 ```
 
@@ -271,8 +270,8 @@ Write ONE file: `dist/index.html` — fully self-contained, no external .jsx fil
 ### Data arrays to generate:
 
 ```js
-const GROUNDED_DATA = [ /* 50 objects — full provenance per data-pipeline.md */ ];
-const AIRLINES = [ /* 50 airlines; every numeric must match GROUNDED_DATA */ ];
+const GROUNDED_DATA = [ /* one object per airline — full provenance per data-pipeline.md */ ];
+const AIRLINES = [ /* one entry per airline in tickers.json; every numeric must match GROUNDED_DATA */ ];
 const SCENARIOS = [ /* 4 scenarios with dir/dirClass fields */ ];
 const AUDIT_CHUNKS = [ /* optional: 15-25 evidence entries, verbatim quotes */ ];
 const REGION_LABELS = { NA:"North America", EU:"Europe", MENA:"MENA", Asia:"Asia-Pacific", Oceania:"Oceania", LATAM:"Lat Am & Africa" };
@@ -315,8 +314,7 @@ grep -c '"US"' dist/index.html             # should be 0 for region code
 ## Step 8 — Report
 
 Report:
-- Total airlines processed (target: 50)
-- Public vs private breakdown
+- Total airlines processed (should match config/tickers.json count)
 - Cache mode used (INCREMENTAL, COLD START, or SEARCH COLD START per Step 2C)
 - Entities: cached vs freshly resolved
 - Search: total cached chunks, new chunks fetched this run, `published_after` filter used

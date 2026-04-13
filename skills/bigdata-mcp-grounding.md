@@ -16,9 +16,9 @@ data in verifiable sources. Read this at the start of every Cowork cycle.
    SEC/20-F, earnings transcript) or clearly attributes the fact to that airline.
    Generic industry articles are **CAUTION** at best; they cannot alone justify a
    precise hedge percentage for a named carrier.
-3. **Subsidiaries** — Search and cache chunks under **both** subsidiary and parent
-   (e.g. Finnair + Finnair Group; BA + IAG). Prefer the **most recent issuer document**
-   over older snippets or third-party summaries.
+3. **Subsidiaries** — For airlines under a parent group (e.g. BA and Iberia under IAG),
+   search and cache chunks under **both** subsidiary and parent. Prefer the **most
+   recent issuer document** over older snippets or third-party summaries.
 4. **Every AUDIT_CHUNKS entry** must cite a real source with `date`, `source`, `company`
    and a **verbatim** `quote` from the chunk (not paraphrased numbers).
 5. **Never fabricate** URLs, document IDs, dates, or publisher names.
@@ -63,7 +63,7 @@ print(json.dumps(result) if result else 'MISS')
 
 To check which lookups are NOT cached (bulk):
 ```bash
-python3 output/cache_helper.py uncached 'Qatar Airways' 'Singapore Airlines' 'Delta Air Lines'
+python3 output/cache_helper.py uncached 'Delta Air Lines' 'Ryanair Holdings' 'Deutsche Lufthansa'
 ```
 
 If HIT: skip the API call, use cached entity_id.
@@ -210,34 +210,24 @@ per airline and logging evidence in `GROUNDED_DATA`.** Use this table only to cr
 Historical reference as of internal review — **always supersede** with issuer documents
 retrieved via MCP when they differ (e.g. policy updates, new tenors).
 
-### Zero Hedge (confirmed)
+### Zero Hedge (confirmed — current airline list)
 | Airline | Reason | Source |
 |---------|--------|--------|
 | DAL, UAL, AAL | Terminated ~2015, fully spot-exposed | SEC 10-K filings |
 | LUV | Terminated Q2 2025, saving ~$150M/yr in premiums | Q2 2025 earnings |
 | JBLU | No contracts as of Dec 31, 2025 | 2025 annual report |
 | ALK | Suspended 2023, all settled by end 2025 | FY2025 filing |
-| Hainan, China Southern, China Eastern | CAAC regulatory ban | Reuters Mar 2026 |
-| Gulf carriers (Emirates, Etihad, Qatar, Saudia, Gulf Air, Oman Air) | No formal programs | Industry analysis |
-| IndiGo, Air India | No hedging program | Company disclosures |
-| WestJet | Private, no program | Industry estimate |
-| SAS | Post-Chapter 11, no program | Restructuring filings |
 
-### Hedged (confirmed)
+### Hedged (confirmed — current airline list)
 | Airline | Coverage | Price | Tenor | Instruments | Caveat |
 |---------|----------|-------|-------|-------------|--------|
-| Ryanair | 82% | $67-77/bbl Brent | 12 mo | Swaps, options | — |
-| IAG group (BA, Iberia, Vueling) | 75% | ~$80/bbl Brent | 6 mo | Swaps, collars | — |
-| Lufthansa group (Swiss, Austrian) | 80% | $846/mt jet fuel | 9 mo | Swaps, options | — |
-| Air France-KLM | 65% | ~$75/bbl Brent | 9 mo | Swaps, collars | — |
-| Cathay Pacific | 30% | ~$70/bbl Brent CRUDE | 3 mo | Options on crude | **⚠ Hedges crude only — crack spread NOT covered** |
-| Air Canada | 17% | $0.51/liter jet fuel | 3 mo | Jet fuel swaps | Direct jet fuel hedge |
-| Singapore Airlines | 50% | ~$78/bbl Brent | 12 mo | Swaps, options | — |
-| ANA, JAL | 45% | ~¥21,000/kL jet fuel | 9 mo | Swaps | JPY/USD FX exposure |
-| Korean Air | 30% | ~$74/bbl Brent | 6 mo | Swaps | KRW/USD FX exposure |
-| Qantas | 52% | ~$77/bbl Brent | 9 mo | Swaps, options | AUD/USD FX exposure |
-| Air New Zealand | 50% | ~$76/bbl | 9 mo | Swaps | — |
-| Finnair | **Verify** | **Verify** | **Verify** (policy may cite 18–24 mo horizon, tiered ratios) | Per issuer | **Do not ship old 60% / 6 mo without a current chunk quote** |
+| Ryanair | 84% | $77/bbl Brent | 12 mo | Swaps, call options | FY26 coverage at Dec 31, 2025 |
+| IAG group (BA, Iberia) | 62% | $745/mt | 12 mo | Swaps, collars, call options | 3-year rolling; Q1 at 75% |
+| Lufthansa | 76% | $846/mt jet fuel | 24 mo | Gasoil/Brent options + jet futures | Target 85% for passenger airlines |
+| Air France-KLM | 62% | $778/mt | 24 mo | Brent/gasoil/jet CIF swaps+options | New 24-month policy from Dec 2025 |
+| Air Canada | 8.5% | $0.51/L jet fuel | 3 mo | Jet fuel swaps | H1 2026 only; H2 unhedged |
+| Finnair | 65% | ~$677-698/mt | 24 mo | Jet CIF NWE forward contracts/options | H1 79%, H2 51%; horizon extended Dec 2025 |
+| Aegean Airlines | ~30% | — | ~6 mo | Estimated | CAUTION — no primary doc retrieved |
 
 ---
 

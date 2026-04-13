@@ -1,7 +1,7 @@
 # How It Works — Airline Iran-Exposure Dashboard
 
 > This document is **static reference**. It does not need to be regenerated.
-> Last updated: 2026-03-24
+> Last updated: 2026-04-13
 
 ---
 
@@ -9,12 +9,12 @@
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                  Claude Cowork (Agent)                    │
+│              AI Agent (Cursor or Claude Cowork)           │
 │                                                          │
-│  1. Read config/tickers.json (50 airlines)               │
-│  2. Check output/bigdata_cache.db → entities table       │
-│  3. Check output/bigdata_cache.db → search_results       │
-│  4. Call Bigdata.com MCP for fresh/missing data           │
+│  1. Read config/tickers.json (airline list)               │
+│  2. Resolve entities via Bigdata.com find_companies       │
+│  3. Search filings/transcripts via bigdata_search         │
+│  4. Pull tearsheets via bigdata_company_tearsheet         │
 │  5. Build GROUNDED_DATA, then AIRLINES per skills/*.md   │
 │  6. Generate dist/index.html (single self-contained file)│
 │  7. Git commit & push → GitHub Actions → GitHub Pages    │
@@ -23,9 +23,8 @@
                       │
         ┌─────────────┼──────────────┐
         ▼             ▼              ▼
-  config/        output/              dist/
-  tickers.json   bigdata_cache.db    index.html ──→ GitHub Pages
-                 cache_helper.py
+  config/        skills/              dist/
+  tickers.json   *.md specs          index.html ──→ GitHub Pages
 ```
 
 ---
@@ -33,31 +32,16 @@
 ## Data Flow
 
 ### Input: `config/tickers.json`
-- 50 airlines with name, ticker, country, lookup string, parent group
+- North American and European public airlines with name, ticker, country, lookup string
 - 4 scenario definitions (Current, Moderate, Severe, Extreme)
-- Country → region mapping (NA, EU, MENA, Asia, Oceania, LATAM)
+- Country → region mapping (NA, EU)
 - Country → flag emoji mapping
 
-### Caching Layer: `output/`
+### Caching (optional)
 
-Everything is stored in a single SQLite database. The `output/` folder is
-**git-ignored** — it's a local-only cache that the agent rebuilds as needed.
-
-| Resource | SQLite Table | Persistence |
-|----------|-------------|-------------|
-| Entity resolution (`find_companies` results) | `entities` | Weeks (entity IDs stable) |
-| Search result chunks | `search_results` | Grows across runs, deduped by chunk_id |
-| Run history | `run_log` | Tracks start/finish/status per cycle |
-| `cache_helper.py` | — | Python helper, lives alongside DB |
-
-The cache **accumulates** — data from every prior run is preserved and reused.
-The agent only fetches what's new:
-- **Entity resolution**: If airline exists in `entities` table, skip `find_companies`
-- **Search results**: For airlines with cached chunks, pass `published_after`
-  (last run timestamp) to only fetch documents published since then.
-  Airlines with 0 cached chunks get a full history pull.
-- **Supplementary searches**: Always filtered by `published_after` to avoid refetching
-- **Tearsheets**: Only re-pulled if last run > 7 days ago
+When running in **Claude Cowork**, an SQLite cache (`output/bigdata_cache.db`)
+can accumulate search results across runs for incremental updates. When running
+in **Cursor**, data is collected fresh each session — no local cache required.
 
 ### Processing: `skills/*.md`
 
@@ -130,15 +114,14 @@ Shows rank medals, hedge coverage bars, tenor, TRASM, Fuel CASM, and status badg
 ### 2. Hedge Positions
 Card grid showing each airline's fuel risk management details — coverage %,
 forward tenor, strike price, instrument type, and policy description.
-Flags crude-only hedgers (e.g. Cathay Pacific) with a warning badge.
 
 ### 3. Risk vs Spread (Scatter)
 Recharts ScatterChart plotting hedge coverage (X) vs adjusted spread (Y).
 Bubble size = √ASMs. Top-right = best positioned; bottom-left = most vulnerable.
 
 ### 4. Margin Impact (Bar Chart)
-Grouped bar chart showing adjusted spread across all 4 scenarios for the top 15
-airlines by ASMs. Carriers with consistent bars = well-insulated from fuel shocks.
+Grouped bar chart showing adjusted spread across all 4 scenarios for every airline.
+Carriers with consistent bars = well-insulated from fuel shocks.
 
 ### 5. Region View
 Cards grouping airlines by geography with aggregated stats — average spread,
@@ -170,12 +153,20 @@ No build step required — the HTML file is the build artifact.
 
 ## Refresh Cycle
 
-1. Claude Cowork runs on schedule (configurable, default every few hours)
-2. Reads `config/tickers.json` + `skills/*.md` for instructions
-3. Checks entity & search caches → only queries what's missing/stale
-4. Generates fresh `dist/index.html` with updated data
-5. Commits and pushes → auto-deploys via GitHub Actions
+### From Cursor (recommended)
 
-Average incremental cycle: ~3-5 minutes (only new documents since last run).
-Cold start (first ever run, no cache): ~15-20 minutes for 50 airlines × 4 queries each.
-Subsequent runs get faster as the cache grows — most chunks are already stored.
+1. Open repo in Cursor with [Bigdata.com](https://bigdata.com) MCP connector enabled
+2. Agent reads `config/tickers.json` + `skills/*.md` for instructions
+3. Calls MCP tools to resolve entities, search filings, pull tearsheets
+4. Generates fresh `dist/index.html` with updated data
+5. Commit and push → auto-deploys via GitHub Actions
+
+Typical run: ~90 MCP calls for 14 airlines (cold start, ~10–15 minutes).
+
+### From Claude Cowork (alternative)
+
+1. Cowork runs on schedule, reads `update-dashboard.md`
+2. Checks `output/bigdata_cache.db` → only queries what's missing/stale
+3. Generates `dist/index.html` and commits
+
+Incremental cycle with cache: ~3–5 minutes.

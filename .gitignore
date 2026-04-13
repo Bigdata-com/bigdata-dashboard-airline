@@ -32,5 +32,8 @@ ehthumbs.db
 # Output folder (local-only cache, regenerated per Cowork run)
 output/
 
+# Backup configs
+config/*_backup.*
+
 # Internal / working copies (not deployed)
 internal/
