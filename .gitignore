@@ -30,7 +30,9 @@ ehthumbs.db
 .cache/
 
 # Output folder (local-only cache, regenerated per Cowork run)
-output/
+output/*
+!output/cache_helper.py
+!output/pull_searches.py
 
 # Backup configs
 config/*_backup.*

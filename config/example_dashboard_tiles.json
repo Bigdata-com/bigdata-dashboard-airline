@@ -1,0 +1,14 @@
+[
+  {
+    "tile_key": "brent_crude",
+    "label": "Brent Crude",
+    "value_text": "$97/bbl",
+    "sub": "Example — replace after grounding from search_results",
+    "sub_color": "#ef4444",
+    "chunk_id": null,
+    "source_name": null,
+    "document_date": null,
+    "url": null,
+    "verbatim_quote": null
+  }
+]

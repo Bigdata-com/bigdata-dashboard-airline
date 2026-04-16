@@ -313,17 +313,43 @@ Each tab opens with a `<MethodBox>` explaining:
 
 - The full **`AIRLINES`** table (unit economics, `instruments`, `policy`, `hedgePrice` strings, ASM, fuel $/gal, etc.): values are copied to match **`GROUNDED_DATA`** at build time, but **most columns are not individually re-verified** on every page load — only what you keep in **`GROUNDED_DATA`** is the audit trail.
 - **`AUDIT_CHUNKS`**: manually curated narrative cards; they are **not** auto-selected from SQLite each run unless you build tooling to do so.
-- **`STATIC_MARKET_TILES`** (header: Brent, NW EU jet, crack, Hormuz): **hardcoded scenario copy** — not from MCP. Only **At-Risk** / **Unhedged** counts are computed from **`AIRLINES`** in the browser.
+- **`STATIC_MARKET_TILES`** (first four header tiles: Brent, NW EU jet, crack, Hormuz): at **`python3 scripts/build_dashboard.py`**, each tile is filled from SQLite **`dashboard_kv`** when a row exists for that key; otherwise defaults embedded in **`scripts/build_dashboard.py`** are used. Only **At-Risk** / **Unhedged** counts are computed live from **`AIRLINES`** in the browser.
 - **`SCENARIOS`** block in HTML: **`jetPctUp` / labels / narrative `desc`** (including baselines like **~$742 → $1,730/mt**) are **editorial**; `config/tickers.json` also carries scenario **`crudePctUp` / `jetPctUp`** — keep them in sync if you change economics.
 - **FX / conversion copy** in MethodBox (**EUR×1.08**, **GBP×1.26**, **ASK×0.6214**): fixed assumptions for EU rows unless you change them explicitly.
 - **Header context line** (“War started…”, “Jet fuel +133%”, etc.): static copy.
 
-**How to pull “fresh” macro or market numbers from Bigdata on subsequent runs**
+**Stale vs fresh (important):** `dashboard_kv` stops tiles from silently drifting **relative to whatever you last wrote into that table**. It does **not** auto-update when Bigdata returns new chunks. Workflow: run searches → **upsert `dashboard_kv`** from the chosen chunks (or a small import JSON) → run **`scripts/build_dashboard.py`** so **`dist/index.html`** picks up the new values. If you skip step 2 or 3, tiles stay stale.
 
-1. **Add supplementary searches** (already have seven broad queries in the runbook; extend with e.g. *“Brent crude spot price jet fuel Northwest Europe”*, *“Strait of Hormuz shipping disruption”*) in `output/pull_searches.py` (or your MCP batch), with **`save_search_chunks(..., airline=None)`** so chunks land in **`search_results`** with `airline` NULL or a sentinel like `"__macro__"`.
-2. **After each run**, pick the chunk(s) that actually contain the figure you trust; record **`chunk_id` + verbatim substring** (same rules as `GROUNDED_DATA`).
-3. **Inject at build time** (recommended): extend **`scripts/build_dashboard.py`** to read those rows from SQLite and **string-replace** or **JSON-merge** a small block (e.g. replace `STATIC_MARKET_TILES` or emit `const MACRO_TILES = ...` from a template). That keeps the static site **self-contained** with **no browser CORS** to commodity APIs.
-4. **Do not** treat generic news headlines as **CONFIRM** for airline-specific hedge %; macro tiles can be **CAUTION** if sourced from broad news search.
+**`dashboard_kv` — table + commands**
+
+- Table is created automatically by **`output/cache_helper.py`** (`dashboard_kv` with `tile_key` primary key and display + provenance columns).
+- Canonical tile keys (see `MARKET_TILE_KEYS` in `cache_helper.py`): **`brent_crude`**, **`jet_fuel_nw_eu`**, **`jet_crack_spread`**, **`hormuz_status`**.
+- List rows: `python3 output/cache_helper.py dashboard-tiles-list`
+- Import several tiles from JSON (e.g. after you curate values from new `search_results`):
+
+```bash
+python3 output/cache_helper.py dashboard-tiles-import config/example_dashboard_tiles.json
+```
+
+- Programmatic upsert (fills provenance from `search_results` when **`chunk_id`** is set and other provenance fields omitted):
+
+```bash
+python3 -c "
+import sys; sys.path.insert(0,'output')
+from cache_helper import save_dashboard_tile
+save_dashboard_tile(
+  'brent_crude', 'Brent Crude', '\$97/bbl', 'From saved chunk (CAUTION: news)',
+  '#ef4444', chunk_id='YOUR_CHUNK_ID_HERE',
+)
+"
+```
+
+**How to pull “fresh” macro numbers from Bigdata on subsequent runs**
+
+1. **Add supplementary searches** (extend with e.g. *“Brent crude spot price jet fuel Northwest Europe”*) in `output/pull_searches.py` (or your MCP batch), with **`save_search_chunks(..., airline=None)`** so chunks land in **`search_results`**.
+2. **After each run**, pick the chunk(s) that contain the figure you trust; **`save_dashboard_tile(..., chunk_id=...)`** or **`dashboard-tiles-import`** so **`dashboard_kv`** stores the **published** label/value/sub + provenance.
+3. Run **`python3 scripts/build_dashboard.py`** so **`dist/index.html`** embeds the updated tile JSON.
+4. **Do not** treat generic news as **CONFIRM** for airline-specific hedge %; macro tiles are often **CAUTION**.
 
 ---
 

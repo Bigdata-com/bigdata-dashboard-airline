@@ -212,6 +212,11 @@ const SCENARIOS = [
 
 const REGION_LABELS = { NA:"North America", EU:"Europe", MENA:"Middle East & Africa", Asia:"Asia-Pacific", Oceania:"Oceania", LATAM:"Lat Am & Caribbean" };
 
+// Header snapshot tiles (first four): values from SQLite dashboard_kv when a row
+// exists for each tile_key; otherwise defaults in scripts/build_dashboard.py.
+// Update rows after macro searches (see update-dashboard.md). At-risk / Unhedged tiles are computed in App().
+const STATIC_MARKET_TILES = [{"label": "Brent Crude", "value": "$110/bbl", "sub": "Manual scenario marker (not spot ICE)", "subColor": "#ef4444"}, {"label": "Jet Fuel NW EU", "value": "$1,730/mt", "sub": "+133% vs pre-conflict baseline (manual)", "subColor": "#ef4444"}, {"label": "Jet Crack Spread", "value": "$45+/bbl", "sub": "vs historical avg $8–12/bbl (manual)", "subColor": "#f97316"}, {"label": "Hormuz Status", "value": "RESTRICTED", "sub": "Scenario label (manual)", "subColor": "#f97316"}];
+
 const AUDIT_CHUNKS = [
   { date:"2026-03-17", source:"Factset Transcripts", company:"Delta Air Lines", riskFactor:"No Fuel Hedge", headline:"Delta confirms industry-wide absence of fuel hedges at March 2026 conference", quote:"this will be the first time with a pretty sudden fuel shock that we as an industry will go through it with no one with fuel hedges. For Delta, the fact that we refine our own fuel up at Monroe gives us a meaningful hedge on the crack.", motivation:"Confirms Delta and all US peers are functionally unhedged on jet fuel price", tag:"CONFIRM", tagColor:"#34d399" },
   { date:"2026-02-05", source:"Edgar SEC Filings", company:"Southwest Airlines", riskFactor:"Hedge Termination", headline:"Southwest terminated all fuel hedges in Q2 2025", quote:"During second quarter 2025, the Company terminated its remaining portfolio of fuel hedging contracts, which were scheduled to settle through 2027, to effectively close its fuel hedging portfolio and program.", motivation:"Confirms LUV fully spot-exposed entering Iran conflict", tag:"CONFIRM", tagColor:"#34d399" },
@@ -835,12 +840,9 @@ function App() {
   const unhedged = AIRLINES.filter(a=>a.hedgePct===0).length;
 
   const TILES = [
-    { label:'Brent Crude',      value:'$110/bbl',   sub:'Iran conflict premium +$45/bbl', subColor:'#ef4444' },
-    { label:'Jet Fuel NW EU',   value:'$1,730/mt',  sub:'+133% vs pre-conflict baseline', subColor:'#ef4444' },
-    { label:'Jet Crack Spread', value:'$45+/bbl',   sub:'vs historical avg $8–12/bbl', subColor:'#f97316' },
-    { label:'Hormuz Status',    value:'RESTRICTED', sub:'Military conflict active', subColor:'#f97316' },
-    { label:'At-Risk Carriers', value:`${atRisk}/14`, sub:'Negative unit economics (current)', subColor:'#ef4444' },
-    { label:'Unhedged Carriers',value:`${unhedged}/14`, sub:'Zero derivative protection', subColor:'#ef4444' },
+    ...STATIC_MARKET_TILES,
+    { label:"At-Risk Carriers", value:`${atRisk}/14`, sub:"Negative unit economics (current)", subColor:"#ef4444" },
+    { label:"Unhedged Carriers", value:`${unhedged}/14`, sub:"Zero derivative protection", subColor:"#ef4444" },
   ];
 
   const TABS = ['Resilience Ranking','Hedge Positions','Risk vs Spread','Margin Impact','Region View','Operating Metrics','Evidence & Sources'];
