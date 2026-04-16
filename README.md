@@ -32,7 +32,7 @@ mode can call the [Bigdata.com](https://bigdata.com) MCP tools directly — no C
 1. Open **Cursor Settings** (gear icon or `Cmd+,`)
 2. Navigate to **MCP** in the sidebar
 3. Click **+ Add new MCP server**
-4. Enter the server URL: `https://mcp.bigdata.com/sse`
+4. Enter the server URL: `https://mcp.bigdata.com/` (site root; the old `/sse` path returns 404)
 5. Cursor will prompt you to authenticate — sign in with your
    [Bigdata.com](https://bigdata.com) account or API key
 6. Once connected, verify the tools are available by asking the agent:
@@ -40,32 +40,31 @@ mode can call the [Bigdata.com](https://bigdata.com) MCP tools directly — no C
 
 ### Running the update
 
-Open this repository in Cursor and give the agent this prompt:
+Open this repository in Cursor and paste a prompt like the one below (adjust if your
+`.env` or airline list differs). 
 
 ```
-Read the plan in .cursor/plans/run_dashboard_update_ba6a0bca.plan.md
-(or use the attached plan file). Execute it against the airlines in
-config/tickers.json.
+Run the airline dashboard pipeline from the repo root.
 
-The three Bigdata.com MCP tools you need are:
-- find_companies — resolve airline name → entity ID
-- bigdata_search — semantic search across filings, transcripts, news
-- bigdata_company_tearsheet — structured financial data for public carriers
+1. Use airlines/scenarios from config/tickers.json (edit that file if the list should change).
+2. Ensure .env has BIGDATA_API_KEY and any LLM/Vertex variables you use for labeling.
+3. Run: uv sync && uv run python -m app.main
 
-Follow the specs in skills/ for output format and data schema.
-Generate dist/index.html as the final artifact.
+Expect app/data/*.json caches and dist/index.html. If a step fails mid-run, fix the
+cause and continue with: uv run python -m app.main --step <step> (use --help for step names).
+
+Optional context: skills/data-pipeline.md and skills/frontend-design.md describe
+grounding rules and UI expectations. The MCP tools used under the hood are find_companies,
+bigdata_search, and bigdata_company_tearsheet.
 ```
 
-The agent will:
+What the pipeline does (same order as `app/main.py`):
 
-1. **Resolve entities** — call `find_companies` for each airline's `lookup` field
-2. **Collect data** — run `bigdata_search` queries for hedging, fuel costs, revenue,
-   and Iran exposure; pull `bigdata_company_tearsheet` for each public carrier
-3. **Build GROUNDED_DATA** — extract metrics with source attribution per
-   `skills/data-pipeline.md`
-4. **Generate `dist/index.html`** — single self-contained React dashboard per
-   `skills/frontend-design.md`
-5. **Validate** — check file size, CDN order, region codes, data completeness
+1. **Resolve entities** — `find_companies` for each airline `lookup` in `config/tickers.json`
+2. **Collect data** — `bigdata_search` plus `bigdata_company_tearsheet` per carrier
+3. **Label & extract** — LLM labels chunks, then grounded metrics are built
+4. **Calculate & export** — scenario math and `app/data/dashboard_data.json`
+5. **Dashboard** — renders `dist/index.html` (self-contained bundle)
 
 ### Tips
 
