@@ -135,6 +135,38 @@ def save_search_chunks(run_id, query, airline, chunks):
     conn.close()
     return inserted
 
+
+def flatten_bigdata_search_documents(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Expand MCP bigdata_search `results` (documents with nested chunks) into flat chunk dicts."""
+    out: list[dict[str, Any]] = []
+    for doc in results or []:
+        doc_id = str(doc.get("id", ""))
+        for ch in doc.get("chunks") or []:
+            if not isinstance(ch, dict):
+                continue
+            cnum = ch.get("cnum")
+            cid = f"{doc_id}_{cnum}" if doc_id and cnum is not None else doc_id or _chunk_identifier(doc)
+            out.append(
+                {
+                    "id": cid,
+                    "headline": doc.get("headline", "") or "",
+                    "timestamp": doc.get("timestamp", "") or "",
+                    "url": doc.get("url", "") or "",
+                    "source": doc.get("source") if isinstance(doc.get("source"), dict) else {},
+                    "snippet": ch.get("text", "") or "",
+                }
+            )
+    return out
+
+
+def save_bigdata_search_response(run_id: str, query: str, airline: str | None, payload: dict[str, Any]) -> int:
+    """Persist MCP bigdata_search JSON (object with `results` list) via save_search_chunks."""
+    results = payload.get("results")
+    if not isinstance(results, list):
+        results = []
+    return save_search_chunks(run_id, query, airline, flatten_bigdata_search_documents(results))
+
+
 def get_all_chunks_for_airline(airline_name):
     conn = _get_conn()
     rows = conn.execute(
@@ -324,6 +356,17 @@ if __name__ == "__main__":
         print(json.dumps(_airlines_with_chunks(), indent=2))
     elif cmd == "chunks":
         print(json.dumps(_chunks(), indent=2))
+    elif cmd == "save-mcp":
+        # Usage: save-mcp <run_id> <query> <airline_or_dash> < stdin.json
+        # Use "-" for airline to mean None (supplementary queries).
+        if len(args) < 4:
+            print("Usage: cache_helper.py save-mcp <run_id> <query> <airline_or_-> < stdin.json", file=sys.stderr)
+            sys.exit(1)
+        run_id, query, airline_s = args[1], args[2], args[3]
+        airline: str | None = None if airline_s == "-" else airline_s
+        payload = json.load(sys.stdin)
+        n = save_bigdata_search_response(run_id, query, airline, payload)
+        print(n)
     elif cmd == "dashboard-tiles-list":
         print(json.dumps(list_dashboard_tiles(), indent=2))
     elif cmd == "dashboard-tiles-import":

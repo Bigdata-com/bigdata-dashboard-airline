@@ -28,7 +28,7 @@ body{background:#0a0a0a;color:#e5e7eb;font-family:'DM Sans',sans-serif;font-size
 const { useState, useMemo } = React;
 const { ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, Cell } = Recharts;
 
-const GEN_TS = "2026-04-16 16:22 UTC";
+const GEN_TS = "2026-04-16 17:17 UTC";
 
 // ─── GROUNDED_DATA ────────────────────────────────────────────────────────────
 // Every numeric field in AIRLINES is backed by evidence below.
@@ -172,13 +172,13 @@ const AIRLINES = [
   { name:"Lufthansa",          ticker:"LHA.DE",  country:"Germany",     region:"EU", flag:"🇩🇪",
     trasm:14.72, fuelCasm:3.76, casmEx:10.63, casm:14.39, prasm:10.50, fuelGal:2.49, asm:210, loadFactor:83.2,
     hedgePct:0.76, hedgePrice:"$846/mt ($2.49/gal)", hedgeTenor:24, tenorLabel:"24 mo",
-    instruments:"Gasoil options (50%) + Brent crude options (35%) + Jet fuel futures (15%)", policy:"76% of 2026 group-wide fuel demand hedged at Dec 31, 2025 (target 85% for passenger airlines). Rules-based hedging up to 24-month horizon. Hedges $846/mt effective rate for FY26.",
+    instruments:"Gasoil options (50%) + Brent crude options (35%) + Jet fuel futures (15%)", policy:"76% of 2026 group-wide fuel demand hedged at Dec 31, 2025 (target 85% for passenger airlines). Rules-based hedging up to 24-month horizon. Hedges $846/mt effective rate for FY26. Apr 2026 wires: Lufthansa accelerated CityLine shutdown and capacity cuts citing surging Iran-war fuel costs (CAUTION: news).",
     isPrivate:false, parentGroup:null },
 
   { name:"Ryanair",            ticker:"RYAAY",   country:"Ireland",     region:"EU", flag:"🇮🇪",
     trasm:8.26,  fuelCasm:2.92, casmEx:4.02,  casm:6.94,  prasm:7.60,  fuelGal:2.21, asm:196, loadFactor:94,
     hedgePct:0.84, hedgePrice:"$77/bbl Brent ($2.35/gal)", hedgeTenor:12, tenorLabel:"12 mo",
-    instruments:"Jet fuel forward swaps and call options", policy:"~84% of FY26 (year ending Mar 2026) jet fuel requirements hedged at $77/bbl Brent. FY27 80% locked at $67/bbl. Rolls hedges 12-18 months forward.",
+    instruments:"Jet fuel forward swaps and call options", policy:"~84% of FY26 (year ending Mar 2026) jet fuel requirements hedged at $77/bbl Brent. FY27 80% locked at $67/bbl. Rolls hedges 12-18 months forward. Apr 2026 statement: suppliers can guarantee jet fuel through most of May; if Hormuz closure persists into May/June, cannot rule out supply risks at some EU airports (CAUTION: news wire).",
     isPrivate:false, parentGroup:null },
 
   { name:"Southwest Airlines", ticker:"LUV",     country:"USA",         region:"NA", flag:"🇺🇸",
@@ -190,7 +190,7 @@ const AIRLINES = [
   { name:"United Airlines",    ticker:"UAL",     country:"USA",         region:"NA", flag:"🇺🇸",
     trasm:17.88, fuelCasm:3.44, casmEx:13.02, casm:16.46, prasm:16.18, fuelGal:2.44, asm:330, loadFactor:82.2,
     hedgePct:0.00, hedgePrice:"—", hedgeTenor:0, tenorLabel:"None",
-    instruments:"None", policy:"United does not currently hedge jet fuel market price. CEO confirmed at Mar 17, 2026 conference that no major U.S. carrier holds fuel hedges.",
+    instruments:"None", policy:"United does not currently hedge jet fuel market price. CEO confirmed at Mar 17, 2026 conference that no major U.S. carrier holds fuel hedges. Apr 2026 press summary: United cutting unprofitable flights over the next two quarters and raising bag fees as jet fuel spikes; CEO cited preparing for oil above $100 into 2027 (CAUTION: secondary).",
     isPrivate:false, parentGroup:null },
 
 ];
@@ -215,7 +215,7 @@ const REGION_LABELS = { NA:"North America", EU:"Europe", MENA:"Middle East & Afr
 // Header snapshot tiles (first four): values from SQLite dashboard_kv when a row
 // exists for each tile_key; otherwise defaults in scripts/build_dashboard.py.
 // Update rows after macro searches (see update-dashboard.md). At-risk / Unhedged tiles are computed in App().
-const STATIC_MARKET_TILES = [{"label": "Brent Crude", "value": "$110/bbl", "sub": "Manual scenario marker (not spot ICE)", "subColor": "#ef4444"}, {"label": "Jet Fuel NW EU", "value": "$1,730/mt", "sub": "+133% vs pre-conflict baseline (manual)", "subColor": "#ef4444"}, {"label": "Jet Crack Spread", "value": "$45+/bbl", "sub": "vs historical avg $8–12/bbl (manual)", "subColor": "#f97316"}, {"label": "Hormuz Status", "value": "RESTRICTED", "sub": "Scenario label (manual)", "subColor": "#f97316"}];
+const STATIC_MARKET_TILES = [{"label": "Brent Crude", "value": "$95.60/bbl", "sub": "Malaysia Edge spot line (CAUTION: news wire; Apr 16, 2026)", "subColor": "#f97316"}, {"label": "Jet Fuel (spot proxy)", "value": "~$197/bbl avg cited", "sub": "Yahoo Finance wire cites “$197 a barrel” average jet fuel (CAUTION: units as published)", "subColor": "#f97316"}, {"label": "Jet vs crude (cited range)", "value": "$150–$200/bbl jet", "sub": "Gulf Business summary band for jet fuel vs pre-war $85–$90 (CAUTION)", "subColor": "#f97316"}, {"label": "Hormuz Status", "value": "HEAVILY DISRUPTED", "sub": "JPost explainer: not a formal legal closure, but “heavily disrupted in practice” (CAUTION)", "subColor": "#f97316"}];
 
 const AUDIT_CHUNKS = [
   { date:"2026-03-17", source:"Factset Transcripts", company:"Delta Air Lines", riskFactor:"No Fuel Hedge", headline:"Delta confirms industry-wide absence of fuel hedges at March 2026 conference", quote:"this will be the first time with a pretty sudden fuel shock that we as an industry will go through it with no one with fuel hedges. For Delta, the fact that we refine our own fuel up at Monroe gives us a meaningful hedge on the crack.", motivation:"Confirms Delta and all US peers are functionally unhedged on jet fuel price", tag:"CONFIRM", tagColor:"#34d399" },
@@ -233,6 +233,9 @@ const AUDIT_CHUNKS = [
   { date:"2026-02-13", source:"Quartr Reports", company:"Air Canada", riskFactor:"Minimal Hedge", headline:"Air Canada: only 17% of H1 2026 fuel hedged at $0.51/L", quote:"Including hedges entered into in early 2026, Air Canada has hedged approximately 17% of the anticipated purchases of jet fuel for the first half of 2026 at an average jet fuel price of US$0.51 per litre.", motivation:"Air Canada nearly as exposed as US peers; only H1 and only 17% partially protected", tag:"CONFIRM", tagColor:"#34d399" },
   { date:"2026-03-17", source:"Quartr Transcripts", company:"United Airlines", riskFactor:"No Hedge", headline:"United CEO confirms first time in history all US carriers lack fuel hedges", quote:"For the first time, no major U.S. carrier has fuel hedges. The hedge is the natural hedge, and that is that we pass through to the consumer as the price of fuel rises.", motivation:"Historical precedent — no US carrier hedged entering a major fuel shock since pre-2000s era", tag:"CONFIRM", tagColor:"#34d399" },
   { date:"2026-02-11", source:"Quartr Reports", company:"Finnair", riskFactor:"Hedge Policy", headline:"Finnair target hedge ratio 82.5% for near-term period; 24-month horizon", quote:"The risk management policy states that hedging ratio must be increased during each quarter of the year, so that for the first three months of the hedging period the hedge ratio is approximately between 70% and 95%, with target ratio being 82.5%.", motivation:"Finnair's rolling tiered approach provides maximum protection in near-term where fuel price is certain", tag:"CONFIRM", tagColor:"#34d399" },
+  { date:"2026-04-16", source:"MCDuffie Progress", company:"Lufthansa", riskFactor:"Capacity / Fuel Shock", headline:"Wire: Lufthansa accelerating CityLine shutdown on Iran-war fuel spike", quote:"Lufthansa said Thursday that it was accelerating savings plans by closing a regional subsidiary as the German aviation giant struggles with surging fuel costs due to the Iran war and a wave of labour strikes.", motivation:"Shows hedged group still taking aggressive network/cost actions under jet fuel shock", tag:"CAUTION", tagColor:"#fbbf24" },
+  { date:"2026-04-16", source:"The Kansas City Star", company:"Ryanair", riskFactor:"Jet Supply Chain", headline:"Ryanair warns EU jet fuel availability could tighten if Hormuz stays shut into mid-2026", quote:"Ryanair, the low-cost airline that dominates flying within Europe, said this week that its suppliers could guarantee it enough jet fuel only through most of May. The airline said fuel could be in short supply if ships laden with energy did not soon begin passing through the Strait of Hormuz, a vital waterway on Iran's southern coast.", motivation:"Even a heavily hedged LCC flags physical supply risk if disruption persists", tag:"CAUTION", tagColor:"#fbbf24" },
+  { date:"2026-04-16", source:"Gulf Business", company:"United Airlines", riskFactor:"Network / Pricing", headline:"Press roundup: United trimming unprofitable flying as jet fuel spikes", quote:"United Airlines\nThe US airline is cutting unprofitable flights over the next two quarters as it prepares for oil prices to remain above $100 until the end of 2027, CEO Scott Kirby said.", motivation:"Operational response signal for an unhedged US3 carrier under sustained high jet fuel", tag:"CAUTION", tagColor:"#fbbf24" },
 ];
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
