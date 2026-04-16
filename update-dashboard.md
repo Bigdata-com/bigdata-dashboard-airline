@@ -302,6 +302,31 @@ Each tab opens with a `<MethodBox>` explaining:
 
 ---
 
+## Static vs MCP-grounded data (read this when wiring “live” fields)
+
+**Grounded from Bigdata search cache (`search_results`) + optional tearsheets**
+
+- Everything under **`GROUNDED_DATA`** with a non-null **`chunk_id`** (and matching row in SQLite) was tied to a saved **`bigdata_search`** chunk at publish time.
+- **`GEN_TS`** when using `scripts/build_dashboard.py` is taken from SQLite **`runs.finished_at`** (latest finished run), not from a live clock inside the browser.
+
+**Baked into `dist/index.html` until you edit or regenerate the file (stale risk)**
+
+- The full **`AIRLINES`** table (unit economics, `instruments`, `policy`, `hedgePrice` strings, ASM, fuel $/gal, etc.): values are copied to match **`GROUNDED_DATA`** at build time, but **most columns are not individually re-verified** on every page load — only what you keep in **`GROUNDED_DATA`** is the audit trail.
+- **`AUDIT_CHUNKS`**: manually curated narrative cards; they are **not** auto-selected from SQLite each run unless you build tooling to do so.
+- **`STATIC_MARKET_TILES`** (header: Brent, NW EU jet, crack, Hormuz): **hardcoded scenario copy** — not from MCP. Only **At-Risk** / **Unhedged** counts are computed from **`AIRLINES`** in the browser.
+- **`SCENARIOS`** block in HTML: **`jetPctUp` / labels / narrative `desc`** (including baselines like **~$742 → $1,730/mt**) are **editorial**; `config/tickers.json` also carries scenario **`crudePctUp` / `jetPctUp`** — keep them in sync if you change economics.
+- **FX / conversion copy** in MethodBox (**EUR×1.08**, **GBP×1.26**, **ASK×0.6214**): fixed assumptions for EU rows unless you change them explicitly.
+- **Header context line** (“War started…”, “Jet fuel +133%”, etc.): static copy.
+
+**How to pull “fresh” macro or market numbers from Bigdata on subsequent runs**
+
+1. **Add supplementary searches** (already have seven broad queries in the runbook; extend with e.g. *“Brent crude spot price jet fuel Northwest Europe”*, *“Strait of Hormuz shipping disruption”*) in `output/pull_searches.py` (or your MCP batch), with **`save_search_chunks(..., airline=None)`** so chunks land in **`search_results`** with `airline` NULL or a sentinel like `"__macro__"`.
+2. **After each run**, pick the chunk(s) that actually contain the figure you trust; record **`chunk_id` + verbatim substring** (same rules as `GROUNDED_DATA`).
+3. **Inject at build time** (recommended): extend **`scripts/build_dashboard.py`** to read those rows from SQLite and **string-replace** or **JSON-merge** a small block (e.g. replace `STATIC_MARKET_TILES` or emit `const MACRO_TILES = ...` from a template). That keeps the static site **self-contained** with **no browser CORS** to commodity APIs.
+4. **Do not** treat generic news headlines as **CONFIRM** for airline-specific hedge %; macro tiles can be **CAUTION** if sourced from broad news search.
+
+---
+
 ## Step 7 — Validate
 
 Run through the checklist in `skills/data-pipeline.md → Output Validation Checklist`.
