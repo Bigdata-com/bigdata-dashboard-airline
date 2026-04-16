@@ -38,44 +38,58 @@ mode can call the [Bigdata.com](https://bigdata.com) MCP tools directly — no C
 6. Once connected, verify the tools are available by asking the agent:
    *"Can you call find_companies for Delta Air Lines?"*
 
-### Running the update
+### Cursor agent — fresh run (copy-paste this)
 
-Open this repository in Cursor and paste a prompt like the one below (adjust if your
-`.env` or airline list differs). 
+Paste the block below into **Cursor agent** with this repo open at the **repo root**.
+It matches [`update-dashboard.md`](update-dashboard.md) (authoritative runbook).
 
-```
-Run the airline dashboard pipeline from the repo root.
+````
+You are refreshing the Global Airlines Iran-Exposure dashboard. Work from the repo root.
 
-1. Use airlines/scenarios from config/tickers.json (edit that file if the list should change).
-2. Ensure .env has BIGDATA_API_KEY and any LLM/Vertex variables you use for labeling.
-3. Run: uv sync && uv run python -m app.main
+PRE-READ (in parallel): skills/frontend-design.md, skills/data-pipeline.md, skills/bigdata-mcp-grounding.md, config/tickers.json, update-dashboard.md (Steps 1–6 + “Static vs MCP-grounded”).
 
-Expect app/data/*.json caches and dist/index.html. If a step fails mid-run, fix the
-cause and continue with: uv run python -m app.main --step <step> (use --help for step names).
+CACHE (mandatory — all entity + search results go to output/bigdata_cache.db):
+1) Run: python3 output/cache_helper.py stats
+   - If last_run is null → cold start (full entity + full search history per runbook Step 2B).
+   - If last_run exists AND total_chunks > 0 → incremental (Step 2A: published_after since last_run where applicable).
+   - If last_run exists BUT total_chunks == 0 → search cold start (Step 2C: full searches, no published_after-only).
 
-Optional context: skills/data-pipeline.md and skills/frontend-design.md describe
-grounding rules and UI expectations. The MCP tools used under the hood are find_companies,
-bigdata_search, and bigdata_company_tearsheet.
-```
+ENTITIES:
+2) python3 output/cache_helper.py entities  and  uncached for any missing lookups from config/tickers.json.
+3) For each miss: MCP find_companies using the **lookup** field (not ticker), then save_entity per skills/bigdata-mcp-grounding.md.
 
-What the pipeline does (same order as `app/main.py`):
+SEARCHES:
+4) Per airline: MCP bigdata_search (4 query templates per runbook); after EACH response call save_search_chunks(run_id, query, airline, chunks) with the 4-argument Python API from cache_helper.
+   For British Airways and Iberia: also search under IAG / parent (subsidiary + parent).
+5) Run supplementary broad queries; save with airline=None where the runbook says so.
+6) finish_run(run_id, ...) when done. Verify: python3 output/cache_helper.py chunks  (search_results_rows > 0).
 
-1. **Resolve entities** — `find_companies` for each airline `lookup` in `config/tickers.json`
-2. **Collect data** — `bigdata_search` plus `bigdata_company_tearsheet` per carrier
-3. **Label & extract** — LLM labels chunks, then grounded metrics are built
-4. **Calculate & export** — scenario math and `app/data/dashboard_data.json`
-5. **Dashboard** — renders `dist/index.html` (self-contained bundle)
+GROUNDED HTML:
+7) From SQLite search_results (+ tearsheets if you ran them), update GROUNDED_DATA then AIRLINES in config/dashboard_template.html so numbers match evidence (chunk_id, verbatim_quote, confidence). Follow data-pipeline.md — no invented figures.
+
+HEADER MACRO TILES (optional but avoids stale Brent/jet copy):
+8) After picking trusted snippets, upsert dashboard_kv (tile_keys: brent_crude, jet_fuel_nw_eu, jet_crack_spread, hormuz_status) via cache_helper save_dashboard_tile or dashboard-tiles-import — see update-dashboard.md.
+
+BUILD:
+9) python3 scripts/build_dashboard.py  → writes dist/index.html (GEN_TS + STATIC_MARKET_TILES merge from dashboard_kv + defaults).
+
+VALIDATE:
+10) Run Step 7 checks in update-dashboard.md (wc, grep checklist).
+
+BIGDATA MCP: find_companies (lookup field), bigdata_search, bigdata_company_tearsheet. Do not skip the SQLite cache.
+````
+
+**Optional batch search (REST, not MCP):** if `BIGDATA_API_KEY` is in `.env`, you can run
+`python3 output/pull_searches.py <RUN_ID>` after `start_run` — still must `finish_run` and
+keep the same `save_search_chunks` discipline. Prefer MCP in Cursor when the connector is available.
 
 ### Tips
 
-- **Cold start vs incremental:** The first run fetches everything fresh. Subsequent
-  runs can reuse the existing `dist/index.html` data and only refresh stale fields.
-- **Token budget:** Each tearsheet is large. For 14 airlines, expect ~90 MCP calls.
-  Batch entity resolution and search queries in parallel to save time.
-- **Add/remove airlines:** Edit `config/tickers.json` and re-run. All airline names
-  use the `lookup` field for entity resolution (works better than tickers for non-US stocks).
-- **Subsidiaries:** For airlines under a parent group (e.g., British Airways and
-  Iberia under IAG), search both the subsidiary name and parent group for filing data.
+- **Cold vs incremental:** Decided solely from `python3 output/cache_helper.py stats` (see runbook decision tree).
+- **Token budget:** Tearsheets are large; run `bigdata_company_tearsheet` only when the runbook says (e.g. last_run older than 7 days).
+- **Add/remove airlines:** Edit `config/tickers.json`, resolve new `lookup` values, then search + rebuild HTML.
+- **Subsidiaries:** For BA and Iberia under IAG, search **both** subsidiary and parent group for filing-grade data.
+- **Regenerate HTML only:** `python3 scripts/build_dashboard.py` (updates `GEN_TS`, merges `dashboard_kv` into header tiles; does not fetch Bigdata by itself).
 
 ## Claude Cowork Instruction (alternative)
 
@@ -98,7 +112,6 @@ IMPORTANT:
 - Use the "lookup" field (not ticker) for find_companies
 - For subsidiaries (British Airways, Iberia under IAG):
   search BOTH the subsidiary name AND the parent group for filing data
-- After generating, run: git add dist/ && git commit && git push origin main
 ```
 
 The shipped artifact is a **single self-contained** [`dist/index.html`](dist/index.html)
@@ -108,15 +121,24 @@ from an environment with Git credentials when you want GitHub Pages to update.
 ## Repository Structure
 
 ```
-├── config/tickers.json          ← Airline list, scenarios, region mapping
+├── config/
+│   ├── tickers.json                 ← Airlines, scenarios, regions, flags
+│   ├── dashboard_template.html      ← Source HTML for build_dashboard.py
+│   └── example_dashboard_tiles.json ← Example dashboard_kv import
+├── output/
+│   ├── bigdata_cache.db             ← Local SQLite (gitignored); entities + search_results + dashboard_kv
+│   ├── cache_helper.py              ← Cache API + CLI (tracked)
+│   └── pull_searches.py             ← Optional REST batch search (tracked; needs BIGDATA_API_KEY)
+├── scripts/
+│   └── build_dashboard.py           ← Writes dist/index.html from template + DB
 ├── skills/
-│   ├── frontend-design.md       ← Visual spec (colors, fonts, components)
-│   ├── data-pipeline.md         ← Data schema, formulas, validation
-│   └── bigdata-mcp-grounding.md ← MCP queries, caching, verified facts
+│   ├── frontend-design.md           ← Visual spec (colors, fonts, components)
+│   ├── data-pipeline.md             ← Data schema, formulas, validation
+│   └── bigdata-mcp-grounding.md     ← MCP queries, caching rules
 ├── dist/
-│   └── index.html               ← The dashboard (single file, deployed)
-├── update-dashboard.md          ← Claude Cowork runbook
-└── HOW_IT_WORKS.md              ← Architecture documentation
+│   └── index.html                   ← Deployed single-file dashboard
+├── update-dashboard.md              ← Full Cowork / agent runbook
+└── HOW_IT_WORKS.md                  ← Architecture documentation
 ```
 
 ## Coverage
