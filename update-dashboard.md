@@ -242,7 +242,17 @@ verbatim quotes — same grounding standard as `GROUNDED_DATA`.
 
 ## Step 6 — Generate dist/index.html
 
+Delete any existing `dist/index.html` if you need a clean output path.
+
 Write ONE file: `dist/index.html` — fully self-contained, no external .jsx files.
+
+**Offline regeneration (no git / no GitHub):** to rebuild `dist/index.html` from the saved full-page markup and the cache timestamp only, run from repo root:
+
+```bash
+python3 scripts/build_dashboard.py
+```
+
+This reads `config/dashboard_template.html`, sets `const GEN_TS` from `output/bigdata_cache.db` (latest `runs.finished_at`), warns if any `chunk_id` in the file is missing from `search_results`, and writes `dist/index.html`. After you intentionally change the dashboard HTML, copy the result to `config/dashboard_template.html` so the next offline regen stays in sync.
 
 ### CRITICAL RULES (from skills/frontend-design.md):
 
